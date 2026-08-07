@@ -5,11 +5,13 @@ public class Player : MonoBehaviour
 {
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private WeaponSway weaponSway;
+    [SerializeField] private AudioSource weaponAudioSource;
     [SerializeField] private float mouseSensitivity = 50f;
     [SerializeField] private float minVerticalAngle = -70f;
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private float moveSpeed = 3f;
     private Rigidbody rb;
+    private Animator animator;
 
     private InputSystem_Actions inputs;
     private Vector2 lookInput;
@@ -20,6 +22,7 @@ public class Player : MonoBehaviour
     {
         inputs = new InputSystem_Actions();
         rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
     }
 
     private void OnEnable()
@@ -31,6 +34,9 @@ public class Player : MonoBehaviour
 
         inputs.Player.Move.performed += MoveCharacter;
         inputs.Player.Move.canceled += MoveCharacter;
+
+        inputs.Player.Attack.started += OnAttack;
+        inputs.Player.Attack.canceled += OnAttack;
     }
 
     private void OnDisable()
@@ -40,6 +46,9 @@ public class Player : MonoBehaviour
 
         inputs.Player.Move.performed -= MoveCharacter;
         inputs.Player.Move.canceled -= MoveCharacter;
+
+        inputs.Player.Attack.started -= OnAttack;
+        inputs.Player.Attack.canceled -= OnAttack;
 
         inputs.Disable();
     }
@@ -61,7 +70,7 @@ public class Player : MonoBehaviour
 
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
 
-        weaponSway.ApplySway(lookInput);
+        weaponSway.ApplySway(lookInput, moveInput);
     }
 
     private void FixedUpdate()
@@ -73,10 +82,34 @@ public class Player : MonoBehaviour
         velocity.y = rb.linearVelocity.y;
 
         rb.linearVelocity = velocity;
+
+        if (moveDirection.x != 0 || moveDirection.y != 0)
+            animator.SetBool("isMoving", true);
+        else
+            animator.SetBool("isMoving", false);
     }
 
     private void MoveCharacter(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
+    }
+
+    private void OnAttack(InputAction.CallbackContext context)
+    {
+        bool isAttackHeld = context.ReadValueAsButton();
+        animator.SetBool("isFiring", isAttackHeld);
+
+        if (isAttackHeld)
+        {
+            if (!weaponAudioSource.isPlaying)
+            {
+                weaponAudioSource.loop = true;
+                weaponAudioSource.Play();
+            }
+        }
+        else
+        {
+            weaponAudioSource.Stop();
+        }
     }
 }
