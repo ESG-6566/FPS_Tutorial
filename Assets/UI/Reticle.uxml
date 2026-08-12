@@ -1,0 +1,5 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="Container" style="flex-grow: 1; justify-content: center; align-items: center; align-content: center;">
+        <ui:VisualElement name="reticle" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/UI/images/focus.png?fileID=2800000&amp;guid=fed34252e676ca94ebed9ecca32310ea&amp;type=3#focus&quot;); position: absolute; width: 100px; height: 100px; -unity-background-image-tint-color: rgb(0, 0, 0);"/>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,6 +1,0 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement style="flex-grow: 1; left: 0; top: 0; right: 0; bottom: 0; align-content: center; align-self: auto; justify-content: center; align-items: center;">
-        <ui:VisualElement name="lineHorizontal" style="flex-grow: 1; position: absolute; -unity-background-image-tint-color: rgb(255, 255, 255); height: 2px; width: 50px; top: auto; left: auto; background-color: rgb(255, 0, 0); right: auto; bottom: auto; align-self: auto; align-content: auto; align-items: auto;"/>
-        <ui:VisualElement name="lineVertical" style="flex-grow: 1; position: absolute; -unity-background-image-tint-color: rgb(255, 255, 255); height: 50px; width: 2px; top: auto; left: auto; background-color: rgb(255, 0, 0); right: auto; bottom: auto; align-self: auto; align-content: auto; align-items: auto;"/>
-    </ui:VisualElement>
-</ui:UXML>
