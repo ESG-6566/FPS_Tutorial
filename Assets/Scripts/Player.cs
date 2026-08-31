@@ -137,6 +137,8 @@ public class Player : MonoBehaviour
 
         if (isAttackHeld)
         {
+            weapon.StartFire();
+
             if (!weaponAudioSource.isPlaying)
             {
                 weaponAudioSource.loop = true;
@@ -145,6 +147,7 @@ public class Player : MonoBehaviour
         }
         else
         {
+            weapon.StopFire();
             weaponAudioSource.Stop();
         }
     }
@@ -155,11 +158,13 @@ public class Player : MonoBehaviour
 
         if (isAiming)
         {
+            weapon.crosshair.rootVisualElement.visible = false;
             animator.SetLayerWeight(1, weapon.onAimWalkWeight);
             animator.SetLayerWeight(2, weapon.onAimFiringWeight);
         }
         else
         {
+            weapon.crosshair.rootVisualElement.visible = true;
             animator.SetLayerWeight(1, 1f);
             animator.SetLayerWeight(2, 1f);
         }

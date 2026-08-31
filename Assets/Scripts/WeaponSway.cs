@@ -4,7 +4,6 @@ using UnityEngine;
 public class WeaponSway : MonoBehaviour
 {
     [SerializeField] private float swayAmount = 2f;
-    [SerializeField] private float swaySmooth = 10f;
     [SerializeField] private float maxSwayAngle = 5f;
 
     [Header("Move Offset")]
@@ -22,6 +21,7 @@ public class WeaponSway : MonoBehaviour
     [SerializeField] private float horizontalLimit = 0.005f;
     [SerializeField] private float verticalLimit = 0.005f;
 
+    [NonSerialized] public float distanceToAim;
 
     private Vector3 aimPos;
     private Vector3 startPosition;
@@ -59,9 +59,9 @@ public class WeaponSway : MonoBehaviour
             targetPosition.z -= rotation.z;
         }
 
-        float distance = Vector3.Distance(transform.localPosition, targetPosition);
+        distanceToAim = Vector3.Distance(transform.localPosition, targetPosition);
 
-        if (distance <= 0.001f)
+        if (distanceToAim <= 0.001f)
         {
             transform.localPosition = targetPosition;
         }
