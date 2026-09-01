@@ -101,8 +101,7 @@ public class Player : MonoBehaviour
 
         transform.Rotate(Vector3.up * mouseX);
 
-        cameraPitch -= mouseY;
-        cameraPitch = Mathf.Clamp(cameraPitch, minVerticalAngle, maxVerticalAngle);
+        ApplyCameraPitch(mouseY);
 
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
 
@@ -123,6 +122,13 @@ public class Player : MonoBehaviour
             animator.SetBool("isMoving", true);
         else
             animator.SetBool("isMoving", false);
+    }
+
+    public void ApplyCameraPitch(float value)
+    {
+        cameraPitch -= value;
+        cameraPitch = Mathf.Clamp(cameraPitch, minVerticalAngle, maxVerticalAngle);
+        cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
     }
 
     private void MoveCharacter(InputAction.CallbackContext context)
