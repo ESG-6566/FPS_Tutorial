@@ -51,7 +51,7 @@ public class WeaponSway : MonoBehaviour
     {
         Vector3 targetPosition = startPosition;
 
-        if (Player.instance.isAiming)
+        if (Player.instance.isAiming && !Player.instance.isReloading)
         {
             targetPosition = aimPos + aimOffset;
 
@@ -121,6 +121,17 @@ public class WeaponSway : MonoBehaviour
 
     public void ApplySway(Vector2 lookInput, Vector2 moveInput)
     {
+        if (Player.instance.isReloading)
+        {
+            transform.localRotation = Quaternion.Slerp(
+            transform.localRotation,
+            startRotation,
+            Time.deltaTime * moveOffsetSmooth
+            );
+
+            return;
+        }
+        
         if (Player.instance.isAiming)
             OnAimSway(lookInput, moveInput);
         else

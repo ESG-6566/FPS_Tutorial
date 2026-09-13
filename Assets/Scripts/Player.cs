@@ -14,6 +14,8 @@ public class Player : MonoBehaviour
     [SerializeField] private float moveSpeed = 3f;
     public static Player instance;
     [NonSerialized] public bool isAiming;
+    [NonSerialized] public bool isReloading;
+
     private Rigidbody rb;
     private Animator animator;
 
@@ -55,6 +57,8 @@ public class Player : MonoBehaviour
 
         inputs.Player.CursorLock.started += LockCursor;
         inputs.Player.CursorLock.canceled += LockCursor;
+
+        inputs.Player.Reload.performed += Reload;
     }
 
     private void OnDisable()
@@ -72,6 +76,8 @@ public class Player : MonoBehaviour
 
         inputs.Player.CursorLock.started -= LockCursor;
         inputs.Player.CursorLock.canceled -= LockCursor;
+
+        inputs.Player.Reload.performed -= Reload;
 
         inputs.Disable();
     }
@@ -105,7 +111,16 @@ public class Player : MonoBehaviour
 
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
 
-        weaponSway.ApplySway(lookInput , moveInput);
+        weaponSway.ApplySway(lookInput, moveInput);
+
+        float walkLayerTarget = isAiming && !isReloading ? weapon.onAimWalkWeight : 1f;
+
+        float firingLayerTarget = isAiming && !isReloading ? weapon.onAimFiringWeight : 1f;
+
+        float layerSmooth = 5f * Time.deltaTime;
+
+        DampLayerWeight(1, walkLayerTarget, layerSmooth);
+        DampLayerWeight(2, firingLayerTarget, layerSmooth);
     }
 
     private void FixedUpdate()
@@ -131,6 +146,30 @@ public class Player : MonoBehaviour
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
     }
 
+    public void Reload()
+    {
+        isReloading = true;
+
+        animator.SetBool("isReloading", true);
+        animator.SetBool("isFiring", false);
+
+        weapon.StopFire();
+        weapon.reloadAudio.Play();
+        weaponAudioSource.Stop();
+    }
+
+    private void Reload(InputAction.CallbackContext context)
+    {
+        Reload();
+    }
+
+    public void EndReload()
+    {
+        isReloading = false;
+        animator.SetBool("isReloading", false);
+        weapon.SetBulletCount(weapon.magazineSize);
+    }
+
     private void MoveCharacter(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
@@ -141,7 +180,7 @@ public class Player : MonoBehaviour
         bool isAttackHeld = context.ReadValueAsButton();
         animator.SetBool("isFiring", isAttackHeld);
 
-        if (isAttackHeld)
+        if (isAttackHeld && !isReloading)
         {
             weapon.StartFire();
 
@@ -155,6 +194,7 @@ public class Player : MonoBehaviour
         {
             weapon.StopFire();
             weaponAudioSource.Stop();
+            animator.SetBool("isFiring", false);
         }
     }
 
@@ -165,14 +205,23 @@ public class Player : MonoBehaviour
         if (isAiming)
         {
             weapon.crosshair.rootVisualElement.visible = false;
-            animator.SetLayerWeight(1, weapon.onAimWalkWeight);
-            animator.SetLayerWeight(2, weapon.onAimFiringWeight);
         }
         else
         {
             weapon.crosshair.rootVisualElement.visible = true;
-            animator.SetLayerWeight(1, 1f);
-            animator.SetLayerWeight(2, 1f);
         }
+    }
+
+    private void DampLayerWeight(int layerIndex, float targetWeight, float dampTime)
+    {
+        float currentWeight = animator.GetLayerWeight(layerIndex);
+
+        currentWeight = Mathf.MoveTowards(
+            currentWeight,
+            targetWeight,
+            dampTime
+        );
+
+        animator.SetLayerWeight(layerIndex, currentWeight);
     }
 }

@@ -1,8 +1,5 @@
 using System.Collections;
-using System.ComponentModel;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 public class Weapon : MonoBehaviour
@@ -19,8 +16,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] private GameObject bullet;
     [SerializeField] private float bulletSpeed = 150f;
     [SerializeField] private float fireRate = 360f;
-    [SerializeField] private int magazineSize = 50;
+    [SerializeField] public int magazineSize = 50;
     [SerializeField] private float hipFireAmount = 3f;
+    [SerializeField] public UIDocument bulletCountUI;
+    [SerializeField] public AudioSource reloadAudio;
 
     [Header("Recoil")]
     [SerializeField] private AnimationCurve verticalRecoil;
@@ -33,6 +32,7 @@ public class Weapon : MonoBehaviour
     private int currentBulletIndex;
     private Coroutine fireRoutine;
     private VisualElement container;
+    private Label countLabel;
 
     private float previousVertical;
     private float previousHorizontal;
@@ -53,12 +53,27 @@ public class Weapon : MonoBehaviour
         VisualElement root = crosshair.rootVisualElement;
         container = root.Q<VisualElement>("Container");
 
+        root = bulletCountUI.rootVisualElement;
+        countLabel = root.Q<Label>("Counter_Label");
+        countLabel.text = magazineSize.ToString();
     }
 
     void Update()
     {
         container.style.width = hipFireAmount * 15f;
         container.style.height = hipFireAmount * 15f;
+    }
+
+    public void SetBulletCount(int value)
+    {
+        countLabel.text = value.ToString();
+
+        if (value == 0)
+        {
+            Player.instance.Reload();
+            StopCoroutine(fireRoutine);
+            fireRoutine = null;
+        }
     }
 
     public void StartFire()
@@ -104,6 +119,7 @@ public class Weapon : MonoBehaviour
             {
                 Shoot();
                 ApplyRecoil();
+                SetBulletCount(int.Parse(countLabel.text) - 1);
                 nextFireTime = Time.time + fireInterval;
             }
 

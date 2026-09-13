@@ -32,8 +32,10 @@
   <Project Path="Unity.InferenceEngine.Editor.Visualizer.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
   <Project Path="Unity.ProBuilder.Csg.csproj" />
+  <Project Path="Unity.Animation.Rigging.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Unity.InputSystem.csproj" />
+  <Project Path="Unity.Animation.Rigging.Editor.csproj" />
   <Project Path="PPv2URPConverters.csproj" />
   <Project Path="Unity.InferenceEngine.csproj" />
   <Project Path="Unity.AI.Mesh.csproj" />
@@ -110,6 +112,7 @@
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="Unity.AI.Assistant.Bridge.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Compliance.csproj" />
+  <Project Path="Unity.Animation.Rigging.DocCodeExamples.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Shared.csproj" />
