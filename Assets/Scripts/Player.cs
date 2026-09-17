@@ -1,43 +1,52 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 public class Player : MonoBehaviour
 {
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private Weapon weapon;
-    [SerializeField] private WeaponSway weaponSway;
-    [SerializeField] private AudioSource weaponAudioSource;
     [SerializeField] private float mouseSensitivity = 50f;
     [SerializeField] private float minVerticalAngle = -70f;
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private float moveSpeed = 3f;
-    public static Player instance;
+    [SerializeField] private UIDocument uI;
+    [SerializeField] public List<Weapon> weaponsToEquip = new();
     [NonSerialized] public bool isAiming;
     [NonSerialized] public bool isReloading;
+    [NonSerialized] public bool isSwappingWeapon;
 
+    public static Player instance;
     private Rigidbody rb;
     private Animator animator;
-
     private InputSystem_Actions inputs;
     private Vector2 lookInput;
     private float cameraPitch;
     private Vector2 moveInput;
     private bool freeLook = false;
-
+    private WeaponHandIK handIK;
+    private Weapon otherWeapon;
 
     private void Awake()
     {
         inputs = new InputSystem_Actions();
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
+        handIK = GetComponent<WeaponHandIK>();
 
         instance = this;
+
+        weaponsToEquip.Add(weapon);
     }
 
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        if (weapon)
+            weapon.weaponSway.CalculateAimOffset();
+
+        UnityEngine.Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void OnEnable()
@@ -59,6 +68,10 @@ public class Player : MonoBehaviour
         inputs.Player.CursorLock.canceled += LockCursor;
 
         inputs.Player.Reload.performed += Reload;
+
+        inputs.Player.Interact.performed += OnIntract;
+
+        inputs.Player.Previous.performed += OnPrevious;
     }
 
     private void OnDisable()
@@ -79,6 +92,10 @@ public class Player : MonoBehaviour
 
         inputs.Player.Reload.performed -= Reload;
 
+        inputs.Player.Interact.performed -= OnIntract;
+
+        inputs.Player.Previous.performed -= OnPrevious;
+
         inputs.Disable();
     }
 
@@ -95,9 +112,9 @@ public class Player : MonoBehaviour
         freeLook = !freeLook;
 
         if (freeLook)
-            Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
         else
-            Cursor.lockState = CursorLockMode.Locked;
+            UnityEngine.Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void Update()
@@ -111,7 +128,7 @@ public class Player : MonoBehaviour
 
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
 
-        weaponSway.ApplySway(lookInput, moveInput);
+        weapon.weaponSway.ApplySway(lookInput, moveInput);
 
         float walkLayerTarget = isAiming && !isReloading ? weapon.onAimWalkWeight : 1f;
 
@@ -139,6 +156,89 @@ public class Player : MonoBehaviour
             animator.SetBool("isMoving", false);
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        otherWeapon = other.GetComponent<Weapon>();
+        if (otherWeapon)
+            uI.enabled = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (otherWeapon == other.GetComponent<Weapon>())
+        {
+            otherWeapon = null;
+            uI.enabled = false;
+        }
+    }
+
+    private void OnPrevious(InputAction.CallbackContext context)
+    {
+        if (weaponsToEquip.Count == 1 || isSwappingWeapon)
+            return;
+
+        int index = weaponsToEquip.IndexOf(weapon) - 1;
+        if (index < 0)
+            index = weaponsToEquip.Count - 1;
+
+        otherWeapon = weaponsToEquip[index];
+
+        StartSwapAnimation();
+    }
+
+    private void OnIntract(InputAction.CallbackContext context)
+    {
+        if (otherWeapon == null || isSwappingWeapon)
+            return;
+
+        otherWeapon.transform.parent = cameraTransform;
+        otherWeapon.ApplyInHandPos();
+        otherWeapon.weaponSway.enabled = true;
+        otherWeapon.weaponSway.CalculateAimOffset();
+        otherWeapon.GetComponent<SphereCollider>().enabled = false;
+        otherWeapon.gameObject.SetActive(false);
+
+        uI.enabled = false;
+        weaponsToEquip.Add(otherWeapon);
+        StartSwapAnimation();
+    }
+
+    private void StartSwapAnimation()
+    {
+        isAiming = false;
+        weapon.StopFire();
+        weapon.firingAudio.Stop();
+
+        isSwappingWeapon = true;
+        animator.CrossFade("Holster", 0.1f, 2, Time.deltaTime);
+        weapon.reloadAudio.Stop();
+    }
+
+    public void SwapWeapon()
+    {
+        otherWeapon.crosshair.enabled = true;
+        otherWeapon.enabled = true;
+        otherWeapon.transform.gameObject.SetActive(true);
+
+        handIK.leftHandTarget = otherWeapon.leftHandTarget;
+        handIK.rightHandTarget = otherWeapon.rightHandTarget;
+
+        animator.runtimeAnimatorController = otherWeapon.animatorOverride;
+
+        weapon.crosshair.rootVisualElement.visible = true;
+        weapon.enabled = false;
+        weapon.crosshair.enabled = false;
+        weapon.transform.gameObject.SetActive(false);
+
+        weapon = otherWeapon;
+        weapon.Start();
+
+        isSwappingWeapon = false;
+
+        if (weapon.bulletsInMag <= 0)
+            Reload();
+    }
+
     public void ApplyCameraPitch(float value)
     {
         cameraPitch -= value;
@@ -155,7 +255,7 @@ public class Player : MonoBehaviour
 
         weapon.StopFire();
         weapon.reloadAudio.Play();
-        weaponAudioSource.Stop();
+        weapon.firingAudio.Stop();
     }
 
     private void Reload(InputAction.CallbackContext context)
@@ -167,7 +267,8 @@ public class Player : MonoBehaviour
     {
         isReloading = false;
         animator.SetBool("isReloading", false);
-        weapon.SetBulletCount(weapon.magazineSize);
+        if (!isSwappingWeapon)
+            weapon.SetBulletCount(weapon.magazineSize);
     }
 
     private void MoveCharacter(InputAction.CallbackContext context)
@@ -180,26 +281,29 @@ public class Player : MonoBehaviour
         bool isAttackHeld = context.ReadValueAsButton();
         animator.SetBool("isFiring", isAttackHeld);
 
-        if (isAttackHeld && !isReloading)
+        if (isAttackHeld && !isReloading && !isSwappingWeapon)
         {
             weapon.StartFire();
 
-            if (!weaponAudioSource.isPlaying)
+            if (!weapon.firingAudio.isPlaying)
             {
-                weaponAudioSource.loop = true;
-                weaponAudioSource.Play();
+                weapon.firingAudio.loop = true;
+                weapon.firingAudio.Play();
             }
         }
         else
         {
             weapon.StopFire();
-            weaponAudioSource.Stop();
+            weapon.firingAudio.Stop();
             animator.SetBool("isFiring", false);
         }
     }
 
     private void OnAim(InputAction.CallbackContext context)
     {
+        if (isSwappingWeapon)
+            return;
+
         isAiming = !isAiming;
 
         if (isAiming)

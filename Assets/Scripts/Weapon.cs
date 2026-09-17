@@ -11,7 +11,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] public UIDocument crosshair;
 
     [SerializeField] private Transform reticle;
-    [SerializeField] private WeaponSway weaponSway;
+    [SerializeField] public WeaponSway weaponSway;
     [SerializeField] private Transform barrelEnd;
     [SerializeField] private GameObject bullet;
     [SerializeField] private float bulletSpeed = 150f;
@@ -20,6 +20,14 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float hipFireAmount = 3f;
     [SerializeField] public UIDocument bulletCountUI;
     [SerializeField] public AudioSource reloadAudio;
+    [SerializeField] public AudioSource firingAudio;
+    [SerializeField] public Transform leftHandTarget;
+    [SerializeField] public Transform rightHandTarget;
+    [SerializeField] public AnimatorOverrideController animatorOverride;
+    [SerializeField] public Vector3 inHandPosition;
+    [SerializeField] public Vector3 inHandRotation;
+    public int bulletsInMag;
+
 
     [Header("Recoil")]
     [SerializeField] private AnimationCurve verticalRecoil;
@@ -50,12 +58,16 @@ public class Weapon : MonoBehaviour
             bulletPool[i].SetActive(false);
         }
 
+        bulletsInMag = magazineSize;
+    }
+
+    public void Start() {
         VisualElement root = crosshair.rootVisualElement;
         container = root.Q<VisualElement>("Container");
 
         root = bulletCountUI.rootVisualElement;
         countLabel = root.Q<Label>("Counter_Label");
-        countLabel.text = magazineSize.ToString();
+        countLabel.text = bulletsInMag.ToString();
     }
 
     void Update()
@@ -64,15 +76,20 @@ public class Weapon : MonoBehaviour
         container.style.height = hipFireAmount * 15f;
     }
 
+    public void ApplyInHandPos()
+    {
+        transform.localPosition = inHandPosition;
+        transform.localEulerAngles = inHandRotation;
+    }
+
     public void SetBulletCount(int value)
     {
-        countLabel.text = value.ToString();
+        bulletsInMag = value;
+        countLabel.text = bulletsInMag.ToString();
 
         if (value == 0)
         {
             Player.instance.Reload();
-            StopCoroutine(fireRoutine);
-            fireRoutine = null;
         }
     }
 

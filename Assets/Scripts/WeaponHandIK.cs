@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class WeaponHandIK : MonoBehaviour
 {
-    [SerializeField] private Transform leftHandTarget;
-    [SerializeField] private Transform rightHandTarget;
+    [SerializeField] public Transform leftHandTarget;
+    [SerializeField] public Transform rightHandTarget;
 
     [SerializeField, Range(0f, 1f)] private float leftHandWeight = 1f;
     [SerializeField, Range(0f, 1f)] private float rightHandWeight = 1f;

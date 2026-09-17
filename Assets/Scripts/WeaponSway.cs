@@ -29,16 +29,13 @@ public class WeaponSway : MonoBehaviour
     private Quaternion startRotation;
     private Vector3 reticleStartPosition;
 
-    private void Awake()
+    public void CalculateAimOffset()
     {
         startRotation = transform.localRotation;
         startPosition = transform.localPosition;
         if (reticle)
             reticleStartPosition = reticle.localPosition;
-    }
 
-    void Start()
-    {
         Transform camera = Camera.main.transform;
         float distance = Vector3.Dot(aimPoint.position - camera.position, camera.forward);
         Vector3 cameraCenter = camera.position + camera.forward * distance;
@@ -131,7 +128,7 @@ public class WeaponSway : MonoBehaviour
 
             return;
         }
-        
+
         if (Player.instance.isAiming)
             OnAimSway(lookInput, moveInput);
         else

@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/ShotgunCrosshair.uss?fileID=7433441132597879392&amp;guid=edc7d6250d856d44caeb93334ed51d3b&amp;type=3#ShotgunCrosshair"/>
+    <ui:VisualElement name="Frame" style="flex-grow: 1; width: auto; height: auto; align-items: center; align-content: center; justify-content: center;">
+        <ui:VisualElement name="Container" class="Crosshair" style="rotate: 45deg;">
+            <ui:VisualElement name="TopArc" class="Arc TopArc" style="left: auto;"/>
+            <ui:VisualElement name="RightArc" class="Arc RightArc" style="left: auto; top: auto; right: 0;"/>
+            <ui:VisualElement name="BottomArc" class="Arc BottomArc" style="bottom: 0; top: auto; left: auto;"/>
+            <ui:VisualElement name="LeftArc" class="Arc LeftArc" style="left: 0;"/>
+            <ui:VisualElement name="Center" class="Center"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
