@@ -14,9 +14,11 @@ public class Player : MonoBehaviour
     [SerializeField] private float moveSpeed = 3f;
     [SerializeField] private UIDocument uI;
     [SerializeField] public List<Weapon> weaponsToEquip = new();
+
     [NonSerialized] public bool isAiming;
     [NonSerialized] public bool isReloading;
     [NonSerialized] public bool isSwappingWeapon;
+    [NonSerialized] public bool isMoving;
 
     public static Player instance;
     private Rigidbody rb;
@@ -24,10 +26,12 @@ public class Player : MonoBehaviour
     private InputSystem_Actions inputs;
     private Vector2 lookInput;
     private float cameraPitch;
+    private float cameraYaw;
     private Vector2 moveInput;
     private bool freeLook = false;
     private WeaponHandIK handIK;
     private Weapon otherWeapon;
+    private Transform aimAssistTarget;
 
     private void Awake()
     {
@@ -119,14 +123,13 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        float mouseX = lookInput.x * mouseSensitivity * Time.deltaTime;
-        float mouseY = lookInput.y * mouseSensitivity * Time.deltaTime;
 
-        transform.Rotate(Vector3.up * mouseX);
+        float sensitivity = aimAssistTarget ? mouseSensitivity * weapon.sensePercent : mouseSensitivity;
 
-        ApplyCameraPitch(mouseY);
+        float mouseX = lookInput.x * sensitivity * Time.deltaTime;
+        float mouseY = lookInput.y * sensitivity * Time.deltaTime;
 
-        cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+        ApplyLookRotation(mouseX, mouseY);
 
         weapon.weaponSway.ApplySway(lookInput, moveInput);
 
@@ -138,6 +141,12 @@ public class Player : MonoBehaviour
 
         DampLayerWeight(1, walkLayerTarget, layerSmooth);
         DampLayerWeight(2, firingLayerTarget, layerSmooth);
+
+        FindAimAssistTarget();
+
+        if (!isMoving)
+            ApplyAimAssist();
+
     }
 
     private void FixedUpdate()
@@ -151,9 +160,18 @@ public class Player : MonoBehaviour
         rb.linearVelocity = velocity;
 
         if (moveDirection.x != 0 || moveDirection.y != 0)
+        {
             animator.SetBool("isMoving", true);
+            isMoving = true;
+        }
         else
+        {
             animator.SetBool("isMoving", false);
+            isMoving = false;
+        }
+
+        if (isMoving)
+            ApplyAimAssist();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -170,6 +188,92 @@ public class Player : MonoBehaviour
             otherWeapon = null;
             uI.enabled = false;
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Transform cam = Camera.main.transform;
+        if (cam == null) return;
+
+        Gizmos.color = Color.yellow;
+
+        Vector3 start = cam.position;
+        Vector3 end = start + cam.forward * weapon.aimAssistRange;
+
+        float range = weapon.aimAssistRadius;
+
+        // Two spheres
+        Gizmos.DrawWireSphere(start, range);
+        Gizmos.DrawWireSphere(end, range);
+
+        // Four connecting lines
+        Vector3 right = cam.right * range;
+        Vector3 up = cam.up * range;
+
+        Gizmos.DrawLine(start + right, end + right);
+        Gizmos.DrawLine(start - right, end - right);
+        Gizmos.DrawLine(start + up, end + up);
+        Gizmos.DrawLine(start - up, end - up);
+    }
+
+    private void FindAimAssistTarget()
+    {
+        Transform cam = Camera.main.transform;
+        aimAssistTarget = null;
+
+        Ray ray = new Ray(cam.position, cam.forward);
+        float range = weapon.aimAssistRange;
+        LayerMask targetLayer = weapon.aimAssistLayer;
+
+        if (!Physics.SphereCast(
+            ray,
+            weapon.aimAssistRadius,
+            out RaycastHit sphereHit,
+            range,
+            targetLayer))
+        {
+            return;
+        }
+
+        if (!Physics.Raycast(ray, out RaycastHit rayHit, range))
+        {
+            aimAssistTarget = sphereHit.transform;
+            return;
+        }
+
+        bool directHitIsTarget =
+            (targetLayer.value & (1 << rayHit.collider.gameObject.layer)) != 0;
+
+        if (directHitIsTarget)
+        {
+            aimAssistTarget = rayHit.transform;
+            return;
+        }
+
+        if (rayHit.distance >= sphereHit.distance)
+        {
+            aimAssistTarget = sphereHit.transform;
+        }
+    }
+
+    private void ApplyAimAssist()
+    {
+        if (aimAssistTarget == null) return;
+
+        Transform cam = Camera.main.transform;
+
+        Vector3 direction = (aimAssistTarget.position - cam.position).normalized;
+
+        float targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        float horizontalDistance = new Vector2(direction.x, direction.z).magnitude;
+        float targetPitch = -Mathf.Atan2(direction.y, horizontalDistance) * Mathf.Rad2Deg;
+
+        float t = 1f - Mathf.Exp(-weapon.aimAssistStrength * Time.deltaTime);
+
+        float yawDelta = Mathf.DeltaAngle(cameraYaw, targetYaw) * t;
+        float pitchDelta = Mathf.DeltaAngle(cameraPitch, targetPitch) * t;
+
+        ApplyLookRotation(yawDelta, -pitchDelta);
     }
 
     private void OnPrevious(InputAction.CallbackContext context)
@@ -239,11 +343,13 @@ public class Player : MonoBehaviour
             Reload();
     }
 
-    public void ApplyCameraPitch(float value)
+    public void ApplyLookRotation(float xValue, float yValue)
     {
-        cameraPitch -= value;
+        cameraPitch -= yValue;
         cameraPitch = Mathf.Clamp(cameraPitch, minVerticalAngle, maxVerticalAngle);
         cameraTransform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+        cameraYaw += xValue;
+        transform.rotation = Quaternion.Euler(0f, cameraYaw, 0f);
     }
 
     public void Reload()

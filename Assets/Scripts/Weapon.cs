@@ -36,6 +36,13 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float verticalMultiplier = 1f;
     [SerializeField] private float horizontalMultiplier = 1f;
 
+    [Header("Aim Assist")]
+    [SerializeField] public float aimAssistRange = 10f;
+    [SerializeField] public float aimAssistRadius = 1f;
+    [SerializeField] public float aimAssistStrength = 5f;
+    [SerializeField] public LayerMask aimAssistLayer;
+    [Range(0f, 1f)] public float sensePercent = 0.5f;
+
     private GameObject[] bulletPool;
     private int currentBulletIndex;
     private Coroutine fireRoutine;
@@ -160,8 +167,7 @@ public class Weapon : MonoBehaviour
         previousVertical = verticalValue;
         previousHorizontal = horizontalValue;
 
-        Player.instance.ApplyCameraPitch(verticalDelta);
-        Player.instance.transform.Rotate(Vector3.up * horizontalDelta);
+        Player.instance.ApplyLookRotation(horizontalDelta, verticalDelta);
     }
 
     private GameObject GetBulletFromPool()
