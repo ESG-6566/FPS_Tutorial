@@ -17,7 +17,8 @@ public class ReloadState : StateMachineBehaviour
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-       Player.instance.EndReload();
+        if (animator.tag == "Player")
+            Player.instance.EndReload();
     }
 
     // OnStateMove is called right after Animator.OnAnimatorMove()

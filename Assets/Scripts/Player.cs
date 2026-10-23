@@ -19,6 +19,7 @@ public class Player : MonoBehaviour
     [NonSerialized] public bool isReloading;
     [NonSerialized] public bool isSwappingWeapon;
     [NonSerialized] public bool isMoving;
+    [NonSerialized] public bool isFiring;
 
     public static Player instance;
     private Rigidbody rb;
@@ -27,7 +28,7 @@ public class Player : MonoBehaviour
     private Vector2 lookInput;
     private float cameraPitch;
     private float cameraYaw;
-    private Vector2 moveInput;
+    public Vector2 moveInput;
     private bool freeLook = false;
     private WeaponHandIK handIK;
     private Weapon otherWeapon;
@@ -355,6 +356,7 @@ public class Player : MonoBehaviour
     public void Reload()
     {
         isReloading = true;
+        isFiring = false;
 
         animator.SetBool("isReloading", true);
         animator.SetBool("isFiring", false);
@@ -390,6 +392,7 @@ public class Player : MonoBehaviour
         if (isAttackHeld && !isReloading && !isSwappingWeapon)
         {
             weapon.StartFire();
+            isFiring = true;
 
             if (!weapon.firingAudio.isPlaying)
             {
@@ -402,6 +405,7 @@ public class Player : MonoBehaviour
             weapon.StopFire();
             weapon.firingAudio.Stop();
             animator.SetBool("isFiring", false);
+            isFiring = false;
         }
     }
 

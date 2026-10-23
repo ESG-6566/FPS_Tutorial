@@ -43,6 +43,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] public LayerMask aimAssistLayer;
     [Range(0f, 1f)] public float sensePercent = 0.5f;
 
+    [Header("Body")]
+    [SerializeField] public Vector3 nonAimOffset;
+    [SerializeField] public Vector3 aimOffset;
+
     private GameObject[] bulletPool;
     private int currentBulletIndex;
     private Coroutine fireRoutine;

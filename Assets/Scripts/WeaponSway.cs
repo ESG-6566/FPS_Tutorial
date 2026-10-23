@@ -14,7 +14,7 @@ public class WeaponSway : MonoBehaviour
 
     [Header("Aim")]
     [SerializeField] private Transform aimPoint;
-    [SerializeField] private float aimSmooth = 12f;
+    [SerializeField] public float aimSmooth = 12f;
     [SerializeField] private Vector3 aimOffset;
     [SerializeField] private float maxAimAngle = 1f;
     [SerializeField] private Transform reticle;
