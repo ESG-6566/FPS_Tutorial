@@ -20,7 +20,6 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float hipFireAmount = 3f;
     [SerializeField] public UIDocument bulletCountUI;
     [SerializeField] public AudioSource reloadAudio;
-    [SerializeField] public AudioSource firingAudio;
     [SerializeField] public Transform leftHandTarget;
     [SerializeField] public Transform rightHandTarget;
     [SerializeField] public AnimatorOverrideController animatorOverride;
@@ -28,6 +27,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] public Vector3 inHandRotation;
     public int bulletsInMag;
 
+    [Header("Audio")]
+    [SerializeField] public AudioSource firingAudio;
+    [SerializeField] public AudioClip[] audioClips;
+    private int currentClipIndex = 0;
 
     [Header("Recoil")]
     [SerializeField] private AnimationCurve verticalRecoil;
@@ -44,6 +47,10 @@ public class Weapon : MonoBehaviour
     [Range(0f, 1f)] public float sensePercent = 0.5f;
 
     [Header("Body")]
+    [SerializeField] public Transform bodyPrefab;
+    [SerializeField] public Transform bodyRig;
+    [SerializeField] public Transform bodyLeftHandTarget;
+    [SerializeField] public Transform bodyRightHandTarget;
     [SerializeField] public Vector3 nonAimOffset;
     [SerializeField] public Vector3 aimOffset;
 
@@ -72,7 +79,8 @@ public class Weapon : MonoBehaviour
         bulletsInMag = magazineSize;
     }
 
-    public void Start() {
+    public void Start()
+    {
         VisualElement root = crosshair.rootVisualElement;
         container = root.Q<VisualElement>("Container");
 
@@ -133,6 +141,8 @@ public class Weapon : MonoBehaviour
         previousVertical = 0f;
         previousHorizontal = 0f;
         curveTime = 0.1f;
+
+        currentClipIndex = 0;
 
         resetRecoilRoutine = null;
     }
@@ -232,5 +242,20 @@ public class Weapon : MonoBehaviour
         {
             rb.linearVelocity = direction.normalized * bulletSpeed;
         }
+
+        PlayFiringSound();
+    }
+
+    private void PlayFiringSound()
+    {
+        if (audioClips == null || audioClips.Length == 0)
+            return;
+
+        firingAudio.PlayOneShot(audioClips[currentClipIndex]);
+
+        currentClipIndex++;
+
+        if (currentClipIndex >= audioClips.Length)
+            currentClipIndex = 0;
     }
 }

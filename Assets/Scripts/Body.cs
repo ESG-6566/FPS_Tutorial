@@ -6,7 +6,9 @@ public class Body : MonoBehaviour
     [SerializeField] public Transform TPWeaponPivot;
     [SerializeField] public Transform TPWeaponRig;
 
-    private Animator animator;
+    [HideInInspector] public Animator animator;
+    [HideInInspector] public WeaponHandIK handIK;
+
     private Player player;
     private Transform neck;
     private float currentAngleClamp = 45f;
@@ -14,6 +16,7 @@ public class Body : MonoBehaviour
     void Awake()
     {
         animator = GetComponent<Animator>();
+        handIK = GetComponent<WeaponHandIK>();
     }
 
     void Start()
@@ -88,7 +91,19 @@ public class Body : MonoBehaviour
             targetPosition,
             t
         );
+    }
 
-        
+    public void SetWeapon(Weapon targetWeapon)
+    {
+        FPWeapon.bodyPrefab.gameObject.SetActive(false);
+        targetWeapon.bodyPrefab.gameObject.SetActive(true);
+
+        FPWeapon = targetWeapon;
+        TPWeaponRig = targetWeapon.bodyRig;
+
+        handIK.leftHandTarget = targetWeapon.bodyLeftHandTarget;
+        handIK.rightHandTarget = targetWeapon.bodyRightHandTarget;
+
+        animator.runtimeAnimatorController = targetWeapon.animatorOverride;
     }
 }

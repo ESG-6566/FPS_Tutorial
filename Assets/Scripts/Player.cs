@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private float moveSpeed = 3f;
     [SerializeField] private UIDocument uI;
+    [SerializeField] private Body body;
     [SerializeField] public List<Weapon> weaponsToEquip = new();
 
     [NonSerialized] public bool isAiming;
@@ -28,7 +29,7 @@ public class Player : MonoBehaviour
     private Vector2 lookInput;
     private float cameraPitch;
     private float cameraYaw;
-    public Vector2 moveInput;
+    [HideInInspector] public Vector2 moveInput;
     private bool freeLook = false;
     private WeaponHandIK handIK;
     private Weapon otherWeapon;
@@ -44,6 +45,11 @@ public class Player : MonoBehaviour
         instance = this;
 
         weaponsToEquip.Add(weapon);
+
+        cameraPitch = cameraTransform.localEulerAngles.x;
+        if (cameraPitch > 180f)
+            cameraPitch -= 360f;
+        cameraYaw = transform.eulerAngles.y;
     }
 
     void Start()
@@ -124,14 +130,6 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-
-        float sensitivity = aimAssistTarget ? mouseSensitivity * weapon.sensePercent : mouseSensitivity;
-
-        float mouseX = lookInput.x * sensitivity * Time.deltaTime;
-        float mouseY = lookInput.y * sensitivity * Time.deltaTime;
-
-        ApplyLookRotation(mouseX, mouseY);
-
         weapon.weaponSway.ApplySway(lookInput, moveInput);
 
         float walkLayerTarget = isAiming && !isReloading ? weapon.onAimWalkWeight : 1f;
@@ -152,6 +150,13 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
+        float sensitivity = aimAssistTarget ? mouseSensitivity * weapon.sensePercent : mouseSensitivity;
+
+        float mouseX = lookInput.x * sensitivity * Time.deltaTime;
+        float mouseY = lookInput.y * sensitivity * Time.deltaTime;
+
+        ApplyLookRotation(mouseX, mouseY);
+        
         Vector3 moveDirection = transform.forward * moveInput.y + transform.right * moveInput.x;
         moveDirection.Normalize();
 
@@ -177,9 +182,12 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        otherWeapon = other.GetComponent<Weapon>();
-        if (otherWeapon)
+        Weapon otherTarget = other.GetComponent<Weapon>();
+        if (otherTarget)
+        {
             uI.enabled = true;
+            otherWeapon = otherTarget;
+        }
     }
 
     private void OnTriggerExit(Collider other)
@@ -303,6 +311,8 @@ public class Player : MonoBehaviour
         otherWeapon.GetComponent<SphereCollider>().enabled = false;
         otherWeapon.gameObject.SetActive(false);
 
+        otherWeapon.bodyPrefab.parent = body.TPWeaponPivot;
+
         uI.enabled = false;
         weaponsToEquip.Add(otherWeapon);
         StartSwapAnimation();
@@ -316,6 +326,7 @@ public class Player : MonoBehaviour
 
         isSwappingWeapon = true;
         animator.CrossFade("Holster", 0.1f, 2, Time.deltaTime);
+        body.animator.CrossFade("Holster", 0.1f, 2, Time.deltaTime);
         weapon.reloadAudio.Stop();
     }
 
@@ -342,6 +353,8 @@ public class Player : MonoBehaviour
 
         if (weapon.bulletsInMag <= 0)
             Reload();
+
+        body.SetWeapon(weapon);
     }
 
     public void ApplyLookRotation(float xValue, float yValue)
@@ -393,17 +406,10 @@ public class Player : MonoBehaviour
         {
             weapon.StartFire();
             isFiring = true;
-
-            if (!weapon.firingAudio.isPlaying)
-            {
-                weapon.firingAudio.loop = true;
-                weapon.firingAudio.Play();
-            }
         }
         else
         {
             weapon.StopFire();
-            weapon.firingAudio.Stop();
             animator.SetBool("isFiring", false);
             isFiring = false;
         }

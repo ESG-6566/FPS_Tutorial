@@ -25,9 +25,10 @@ public class WeaponSway : MonoBehaviour
 
     private Vector3 aimPos;
     private Vector3 startPosition;
-
     private Quaternion startRotation;
     private Vector3 reticleStartPosition;
+    private float aimProgress;
+
 
     public void CalculateAimOffset()
     {
@@ -50,15 +51,36 @@ public class WeaponSway : MonoBehaviour
 
         if (Player.instance.isAiming && !Player.instance.isReloading)
         {
-            targetPosition = aimPos + aimOffset;
+            Vector3 baseAimPosition = aimPos + aimOffset;
 
-            Vector3 rotation = transform.localRotation * aimPoint.localPosition;
-            targetPosition.z -= rotation.z;
+            float totalAimDistance = Vector3.Distance(startPosition, baseAimPosition);
+            float remainingDistance = Vector3.Distance(transform.localPosition, baseAimPosition);
+
+            float distanceClamp = 1f - Mathf.Clamp01(
+                remainingDistance / Mathf.Max(totalAimDistance, 0.0001f)
+            );
+
+            aimProgress = Mathf.SmoothStep(0f, 1f, distanceClamp);
+            aimProgress = Mathf.Pow(aimProgress, 10f);
+
+            Vector3 currentAimOffset = transform.localRotation * aimPoint.localPosition;
+
+            Vector3 startAimOffset = startRotation * aimPoint.localPosition;
+
+            Vector3 rotationOffset = currentAimOffset - startAimOffset;
+
+            targetPosition = baseAimPosition;
+            targetPosition.y -= rotationOffset.y * aimProgress;
+            targetPosition.z -= rotationOffset.z * aimProgress;
+        }
+        else
+        {
+            aimProgress = 0f;
         }
 
         distanceToAim = Vector3.Distance(transform.localPosition, targetPosition);
 
-        if (distanceToAim <= 0.001f)
+        if (distanceToAim <= 0.0001f)
         {
             transform.localPosition = targetPosition;
         }
@@ -118,17 +140,6 @@ public class WeaponSway : MonoBehaviour
 
     public void ApplySway(Vector2 lookInput, Vector2 moveInput)
     {
-        if (Player.instance.isReloading)
-        {
-            transform.localRotation = Quaternion.Slerp(
-            transform.localRotation,
-            startRotation,
-            Time.deltaTime * moveOffsetSmooth
-            );
-
-            return;
-        }
-
         if (Player.instance.isAiming)
             OnAimSway(lookInput, moveInput);
         else
@@ -158,8 +169,10 @@ public class WeaponSway : MonoBehaviour
 
         Quaternion targetRotation =
             startRotation *
-            Quaternion.Euler(moveRotationOffset) *
             Quaternion.Euler(swayX, swayY, 0f);
+
+        if (!Player.instance.isReloading)
+            targetRotation *= Quaternion.Euler(moveRotationOffset);
 
         transform.localRotation = Quaternion.Slerp(
             transform.localRotation,
@@ -172,16 +185,18 @@ public class WeaponSway : MonoBehaviour
     {
         float swayX = Mathf.Clamp(moveInput.x * swayAmount * 3f, -maxAimAngle, maxAimAngle);
         float swayY = Mathf.Clamp(lookInput.x * swayAmount, -0.5f, 0.5f);
+        float swayZ = Mathf.Clamp(lookInput.y * swayAmount, -0.5f, 0.5f);
 
-        Quaternion swayRotation = Quaternion.Euler(-swayX, swayY, 0f);
+        Quaternion swayRotation = Quaternion.Euler(-swayX, swayY, swayZ);
         Quaternion targetRotation = startRotation * swayRotation;
+
+        float smooth = aimProgress > 0.9 ? 3f : aimSmooth;
 
         Quaternion newRotation = Quaternion.Slerp(
             transform.localRotation,
             targetRotation,
-            Time.deltaTime * 3f
+            Time.deltaTime * smooth
         );
         transform.localRotation = newRotation;
     }
-
 }
